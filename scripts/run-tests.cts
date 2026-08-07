@@ -5157,7 +5157,7 @@ register(
 
 register("fixture automatici sono riconosciuti solo da prefissi tecnici espliciti", () => {
   assert.equal(isAutomatedGameFixture({ id: "route_game_mobile_01" }), true);
-  assert.equal(isAutomatedGameFixture({ id: "game-1", name: "CI Preview lobby" }), true);
+  assert.equal(isAutomatedGameFixture({ id: "game-1", name: "CI Preview lobby" }), false);
   assert.equal(isAutomatedGameFixture({ id: "preview-probe-123" }), true);
   assert.equal(isAutomatedGameFixture({ id: "game-2", name: "CI Previewer League" }), false);
   assert.equal(isAutomatedGameFixture({ id: "game-3", name: "Preview Campaign" }), false);
@@ -5167,60 +5167,102 @@ register("fixture automatici sono riconosciuti solo da prefissi tecnici esplicit
       { id: "game-2", name: "Regular Campaign" },
       { id: "game-3", name: "CI Preview smoke" }
     ]).map((entry: any) => entry.id),
-    ["game-2"]
+    ["game-2", "game-3"]
   );
 });
 
 register("fixture automatici scaduti vengono eliminati senza toccare partite normali", async () => {
   const now = new Date("2026-08-07T12:00:00.000Z");
   const deletedGameIds: string[] = [];
+  const deleteAttempts: Array<{
+    gameId: string;
+    expectedVersion: number;
+    expectedUpdatedAt: string;
+  }> = [];
   const afterDeletePayloads: Array<{ gameId: string; gameName: string | null }> = [];
   const result = await pruneExpiredAutomatedGameFixtures({
     listGames: () => [
       {
         id: "route_game_old",
         name: "Route game old",
+        version: 2,
         updatedAt: "2026-08-05T12:00:00.000Z"
       },
       {
         id: "ci-preview-old",
         name: "CI Preview nightly",
+        version: 3,
         updatedAt: "2026-08-05T12:00:00.000Z"
       },
       {
         id: "preview-probe-old",
         name: "Probe",
+        version: 4,
+        updatedAt: "2026-08-05T12:00:00.000Z"
+      },
+      {
+        id: "preview-probe-changed",
+        name: "Changed during cleanup",
+        version: 5,
         updatedAt: "2026-08-05T12:00:00.000Z"
       },
       {
         id: "route_game_recent",
         name: "Route game recent",
+        version: 6,
         updatedAt: "2026-08-07T11:00:00.000Z"
       },
-      { id: "route_game_invalid", name: "Invalid date", updatedAt: "not-a-date" },
+      { id: "route_game_invalid", name: "Invalid date", version: 7, updatedAt: "not-a-date" },
       {
         id: "regular-old",
         name: "Long Running Campaign",
+        version: 8,
         updatedAt: "2026-07-01T12:00:00.000Z"
       }
     ],
-    deleteGame: (gameId: string) => deletedGameIds.push(gameId),
+    deleteGameIfUnchanged: (gameId: string, expectedVersion: number, expectedUpdatedAt: string) => {
+      deleteAttempts.push({ gameId, expectedVersion, expectedUpdatedAt });
+      if (gameId === "preview-probe-changed") {
+        return false;
+      }
+      deletedGameIds.push(gameId);
+      return true;
+    },
     afterDelete: (payload: { gameId: string; gameName: string | null }) =>
       afterDeletePayloads.push(payload),
     now
   });
 
-  assert.deepEqual(deletedGameIds, ["route_game_old", "ci-preview-old", "preview-probe-old"]);
+  assert.deepEqual(deletedGameIds, ["route_game_old", "preview-probe-old"]);
+  assert.deepEqual(deleteAttempts, [
+    {
+      gameId: "route_game_old",
+      expectedVersion: 2,
+      expectedUpdatedAt: "2026-08-05T12:00:00.000Z"
+    },
+    {
+      gameId: "preview-probe-old",
+      expectedVersion: 4,
+      expectedUpdatedAt: "2026-08-05T12:00:00.000Z"
+    },
+    {
+      gameId: "preview-probe-changed",
+      expectedVersion: 5,
+      expectedUpdatedAt: "2026-08-05T12:00:00.000Z"
+    }
+  ]);
   assert.deepEqual(
     afterDeletePayloads.map((payload) => payload.gameId),
     deletedGameIds
   );
   assert.deepEqual(result, {
-    scannedGames: 6,
+    scannedGames: 7,
     matchedFixtures: 5,
     eligibleFixtures: 3,
-    deletedGames: 3,
+    deletedGames: 2,
     skippedInvalidUpdatedAt: 1,
+    skippedInvalidVersion: 0,
+    skippedChangedGames: 1,
     deletedGameIds
   });
 });
@@ -5229,6 +5271,7 @@ register("scheduler entrypoint espone recovery AI e retention automatiche", asyn
   const payload = await runScheduledJobs({
     listGames: () => [],
     deleteGame: () => undefined,
+    deleteGameIfUnchanged: () => true,
     saveGame: () => ({ version: 1 }),
     forceEndTurn,
     recoverAiTurnState: async () => ({
@@ -5840,7 +5883,7 @@ register("API lobby di produzione nasconde i fixture automatici senza cancellarl
       const updatedAt = new Date("2026-08-07T10:00:00.000Z").toISOString();
       for (const entry of [
         { id: "route_game_mobile", name: "Route fixture" },
-        { id: "preview-id", name: "CI Preview smoke" },
+        { id: "user-campaign", name: "CI Preview smoke" },
         { id: "preview-probe-mobile", name: "Preview probe" },
         { id: "regular-campaign", name: "Regular Campaign" }
       ]) {
@@ -5859,8 +5902,8 @@ register("API lobby di produzione nasconde i fixture automatici senza cancellarl
       const payload: any = await readJson(response);
       const publicGameIds = payload.games.map((game: any) => game.id);
       assert.equal(publicGameIds.includes("regular-campaign"), true);
+      assert.equal(publicGameIds.includes("user-campaign"), true);
       assert.equal(publicGameIds.includes("route_game_mobile"), false);
-      assert.equal(publicGameIds.includes("preview-id"), false);
       assert.equal(publicGameIds.includes("preview-probe-mobile"), false);
       assert.equal((await context.app.datastore.listGames()).length, 5);
     },

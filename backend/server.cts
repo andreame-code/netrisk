@@ -1388,6 +1388,22 @@ function createApp(options: CreateAppOptions = {}) {
               }
               return gameSessions.datastore.deleteGame(gameId);
             },
+            deleteGameIfUnchanged: (
+              gameId: string,
+              expectedVersion: number,
+              expectedUpdatedAt: string
+            ) => {
+              if (typeof gameSessions.datastore.deleteGameIfUnchanged !== "function") {
+                throw new Error(
+                  "Il datastore non supporta la cancellazione atomica delle partite."
+                );
+              }
+              return gameSessions.datastore.deleteGameIfUnchanged(
+                gameId,
+                expectedVersion,
+                expectedUpdatedAt
+              );
+            },
             afterDelete: ({ gameId }: { gameId: string; gameName: string | null }) => {
               if (gameId === activeGameId) {
                 activeGameId = null;

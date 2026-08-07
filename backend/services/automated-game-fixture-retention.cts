@@ -1,10 +1,11 @@
-const AUTOMATED_GAME_FIXTURE_PREFIX = /^(?:route_game_|ci preview(?:\s|$)|preview-probe-)/i;
+const AUTOMATED_GAME_FIXTURE_ID_PREFIX = /^(?:route_game_|preview-probe-)/i;
 
 export const AUTOMATED_GAME_FIXTURE_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 type GameFixtureEntry = {
   id?: unknown;
   name?: unknown;
+  version?: unknown;
   updatedAt?: unknown;
 };
 
@@ -14,15 +15,17 @@ export interface AutomatedGameFixtureRetentionResult {
   eligibleFixtures: number;
   deletedGames: number;
   skippedInvalidUpdatedAt: number;
+  skippedInvalidVersion: number;
+  skippedChangedGames: number;
   deletedGameIds: string[];
 }
 
-function matchesAutomatedFixturePrefix(value: unknown): boolean {
-  return typeof value === "string" && AUTOMATED_GAME_FIXTURE_PREFIX.test(value.trim());
+function matchesAutomatedFixtureId(value: unknown): boolean {
+  return typeof value === "string" && AUTOMATED_GAME_FIXTURE_ID_PREFIX.test(value.trim());
 }
 
 export function isAutomatedGameFixture(entry: GameFixtureEntry): boolean {
-  return matchesAutomatedFixturePrefix(entry?.id) || matchesAutomatedFixturePrefix(entry?.name);
+  return matchesAutomatedFixtureId(entry?.id);
 }
 
 export function filterAutomatedGameFixtures<T extends GameFixtureEntry>(
@@ -42,7 +45,11 @@ function parseUpdatedAt(value: unknown): Date | null {
 
 export async function pruneExpiredAutomatedGameFixtures(options: {
   listGames: () => Promise<GameFixtureEntry[]> | GameFixtureEntry[];
-  deleteGame: (gameId: string) => Promise<unknown> | unknown;
+  deleteGameIfUnchanged: (
+    gameId: string,
+    expectedVersion: number,
+    expectedUpdatedAt: string
+  ) => Promise<boolean> | boolean;
   afterDelete?: (payload: { gameId: string; gameName: string | null }) => Promise<void> | void;
   now?: Date;
   retentionMs?: number;
@@ -57,6 +64,8 @@ export async function pruneExpiredAutomatedGameFixtures(options: {
     eligibleFixtures: 0,
     deletedGames: 0,
     skippedInvalidUpdatedAt: 0,
+    skippedInvalidVersion: 0,
+    skippedChangedGames: 0,
     deletedGameIds: []
   };
 
@@ -80,9 +89,18 @@ export async function pruneExpiredAutomatedGameFixtures(options: {
     if (!gameId) {
       continue;
     }
+    const version = Number(entry.version);
+    if (!Number.isInteger(version) || version < 1) {
+      result.skippedInvalidVersion += 1;
+      continue;
+    }
 
     result.eligibleFixtures += 1;
-    await options.deleteGame(gameId);
+    const deleted = await options.deleteGameIfUnchanged(gameId, version, entry.updatedAt as string);
+    if (!deleted) {
+      result.skippedChangedGames += 1;
+      continue;
+    }
     if (options.afterDelete) {
       await options.afterDelete({
         gameId,
