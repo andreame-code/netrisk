@@ -7145,6 +7145,14 @@ register("security headers espongono policy browser restrittive", async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     const csp = response.headers.get("content-security-policy") || "";
     const cspDirectives = new Set(csp.split(";").map((directive) => directive.trim()));
+    const secureResponse = await fetch(`${baseUrl}/api/health`, {
+      headers: { "x-forwarded-proto": "https" }
+    });
+    const secureCspDirectives = new Set(
+      (secureResponse.headers.get("content-security-policy") || "")
+        .split(";")
+        .map((directive) => directive.trim())
+    );
 
     assert.equal(response.headers.get("x-content-type-options"), "nosniff");
     assert.equal(response.headers.get("x-frame-options"), "DENY");
@@ -7166,7 +7174,8 @@ register("security headers espongono policy browser restrittive", async () => {
     );
     assert.equal(cspDirectives.has("font-src 'self'"), true);
     assert.equal(cspDirectives.has("frame-ancestors 'none'"), true);
-    assert.equal(cspDirectives.has("upgrade-insecure-requests"), true);
+    assert.equal(cspDirectives.has("upgrade-insecure-requests"), false);
+    assert.equal(secureCspDirectives.has("upgrade-insecure-requests"), true);
   });
 });
 

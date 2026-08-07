@@ -4,6 +4,16 @@ const e2ePort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
 const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${e2ePort}`;
 const skipWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER === "true";
 const includeHtmlReport = process.env.CI || process.env.PLAYWRIGHT_HTML_REPORT === "true";
+const mobileTestMatch = /[\\/]mobile[\\/].*\.spec\.ts$/;
+
+function mobileDeviceUse(deviceName: "Pixel 5" | "iPhone 13", width: number, height: number) {
+  return {
+    ...devices[deviceName],
+    screen: { width, height },
+    trace: "retain-on-failure" as const,
+    viewport: { width, height }
+  };
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -44,7 +54,33 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: mobileTestMatch,
       use: { ...devices["Desktop Chrome"] }
+    },
+    {
+      name: "mobile-chromium-360",
+      testMatch: mobileTestMatch,
+      use: mobileDeviceUse("Pixel 5", 360, 780)
+    },
+    {
+      name: "mobile-chromium-390",
+      testMatch: mobileTestMatch,
+      use: mobileDeviceUse("Pixel 5", 390, 844)
+    },
+    {
+      name: "mobile-chromium-430",
+      testMatch: mobileTestMatch,
+      use: mobileDeviceUse("Pixel 5", 430, 932)
+    },
+    {
+      name: "mobile-chromium-landscape",
+      testMatch: mobileTestMatch,
+      use: mobileDeviceUse("Pixel 5", 844, 390)
+    },
+    {
+      name: "mobile-webkit-390",
+      testMatch: mobileTestMatch,
+      use: mobileDeviceUse("iPhone 13", 390, 844)
     }
   ]
 });

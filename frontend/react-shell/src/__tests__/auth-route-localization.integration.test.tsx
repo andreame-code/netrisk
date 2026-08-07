@@ -106,17 +106,19 @@ beforeEach(() => {
 describe.each(namespaces)("$label public authentication routes", ({ prefix }) => {
   it("clears a failed quick-login error before showing the dedicated login page", async () => {
     loginMock.mockRejectedValue(new Error("Invalid header credentials"));
-    const { user } = renderReactShell(`${prefix}/register`, "it");
+    const { user } = renderReactShell(`${prefix}/lobby`, "it");
 
-    const registerPage = await screen.findByTestId("react-shell-register-page");
+    await screen.findByTestId("react-shell-lobby-page");
     const headerUsername = document.querySelector<HTMLInputElement>("#header-auth-username");
     const headerPassword = document.querySelector<HTMLInputElement>("#header-auth-password");
     const headerSubmit = document.querySelector<HTMLButtonElement>("#header-login-button");
+    const headerLoginLink = document.querySelector<HTMLAnchorElement>("#header-login-link");
     const headerFeedback = document.querySelector<HTMLParagraphElement>("#top-nav-auth-feedback");
 
     expect(headerUsername).not.toBeNull();
     expect(headerPassword).not.toBeNull();
     expect(headerSubmit).not.toBeNull();
+    expect(headerLoginLink).not.toBeNull();
     expect(headerFeedback).not.toBeNull();
 
     await user.type(headerUsername!, "bad-user");
@@ -127,7 +129,7 @@ describe.each(namespaces)("$label public authentication routes", ({ prefix }) =>
       expect(headerFeedback).toHaveTextContent("Invalid header credentials");
     });
 
-    await user.click(within(registerPage).getByRole("link", { name: "Accedi" }));
+    await user.click(headerLoginLink!);
     expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
 
     await waitFor(() => {

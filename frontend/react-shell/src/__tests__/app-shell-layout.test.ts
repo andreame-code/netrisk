@@ -217,11 +217,14 @@ describe("resolveCurrentGameId", () => {
     ).toBe("/react/login?next=%2Fprofile");
   });
 
-  it("preserves the registration return target in the header login link", () => {
+  it("omits duplicate quick login fields while preserving the registration return target", () => {
     getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
 
     const view = renderLayout("/react/register?next=%2Fgame%2Fcampaign-7");
 
+    expect(view.container.querySelector("#header-login-form")).toBeNull();
+    expect(view.container.querySelector("#header-auth-username")).toBeNull();
+    expect(view.container.querySelector("#header-auth-password")).toBeNull();
     expect(
       view.container.querySelector<HTMLAnchorElement>("#header-login-link")?.getAttribute("href")
     ).toBe("/react/login?next=%2Fgame%2Fcampaign-7");

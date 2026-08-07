@@ -1955,9 +1955,12 @@ function createApp(options: CreateAppOptions = {}) {
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
+    const upgradeInsecureRequestsDirective = secureCookieFlag(req)
+      ? " upgrade-insecure-requests;"
+      : "";
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self';${upgradeInsecureRequestsDirective} connect-src ${connectSources.join(" ")}`
     );
   }
 

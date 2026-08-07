@@ -111,6 +111,11 @@ function buildGroupedPlans(): RunPlan[] {
       label: "visual-profile",
       args: ["e2e/00-visual", "e2e/profile", "e2e/smoke"],
       requestedPort: 3140
+    },
+    {
+      label: "mobile",
+      args: ["e2e/mobile"],
+      requestedPort: 3160
     }
   ];
 }

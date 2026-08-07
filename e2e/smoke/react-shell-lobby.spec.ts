@@ -108,6 +108,25 @@ test("mobile War Table lobby paginates 70+ games without limiting focus, search,
   test.slow();
   await resetGame(page);
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    class DeterministicIntersectionObserver {
+      disconnect() {}
+
+      observe() {}
+
+      takeRecords() {
+        return [];
+      }
+
+      unobserve() {}
+    }
+
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      value: DeterministicIntersectionObserver,
+      writable: true
+    });
+  });
 
   const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_lobby_owner"));
   const requestHeaders = { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` };

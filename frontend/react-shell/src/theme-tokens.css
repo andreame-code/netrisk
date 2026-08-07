@@ -5195,3 +5195,21 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     min-height: 44px;
   }
 }
+
+@media (pointer: coarse) {
+  :where(
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="reset"],
+    input[type="submit"],
+    a[href]
+  ) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .game-command-dock button {
+    min-height: 44px !important;
+  }
+}
