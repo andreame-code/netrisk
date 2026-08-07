@@ -24,8 +24,9 @@ async function expectTouchTarget(locator) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
-  expect(box.width).toBeGreaterThanOrEqual(44);
-  expect(box.height).toBeGreaterThanOrEqual(44);
+  const subpixelTolerance = 0.01;
+  expect(box.width).toBeGreaterThanOrEqual(44 - subpixelTolerance);
+  expect(box.height).toBeGreaterThanOrEqual(44 - subpixelTolerance);
 }
 
 async function expectInsideViewport(page, locator) {
