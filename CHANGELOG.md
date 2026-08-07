@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.065 - 2026-08-07
+
+- Added fail-closed mobile UAT on real Android/Chromium and iPhone/WebKit device profiles, including three portrait sizes and one landscape viewport.
+- Covered landing, keyboard-safe authentication, protected routes, empty/waiting/full lobbies, authenticated setup, complete gameplay phases, 44 px touch targets, full-map fit, one-finger pan, and native two-finger pinch.
+- Pinned the mobile CI job to the Playwright 1.61.1 Noble image and retained browser reports, traces, screenshots, and video when a mobile scenario fails.
+
 ## 0.1.064 - 2026-08-07
 
 - Limited both command and War Table lobby views to 15 initial games with an accessible load-more action, full-dataset search and filters, and active/waiting-first ordering.

@@ -160,6 +160,15 @@ async function main(): Promise<void> {
     };
     await runVisualEnvironmentPreflight();
   }
+  const { requiresMobileEnvironmentPreflight } = require("./playwright-mobile-environment.cjs") as {
+    requiresMobileEnvironmentPreflight: (runnerArgs: string[]) => boolean;
+  };
+  if (requiresMobileEnvironmentPreflight(args)) {
+    const { runMobileEnvironmentPreflight } = require("./check-playwright-mobile-env.cjs") as {
+      runMobileEnvironmentPreflight: () => Promise<void>;
+    };
+    await runMobileEnvironmentPreflight();
+  }
   await fs.promises.mkdir(dataDir, { recursive: true });
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);

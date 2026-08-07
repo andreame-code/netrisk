@@ -14,6 +14,10 @@ NetRisk acceptance tests use Playwright and live in `e2e/`, separate from the un
   - `npm run test:e2e:serial`
 - Run only the fast smoke coverage:
   - `npm run test:e2e:smoke`
+- Run Android/Chromium and iPhone/WebKit mobile acceptance coverage:
+  - `npm run test:e2e:mobile`
+- Install both browsers required by mobile acceptance coverage:
+  - `npm run e2e:mobile:install`
 - Run headed for local debugging:
   - `npm run test:e2e:headed`
 - Update visual baselines intentionally:
@@ -45,9 +49,12 @@ Each run also uses a temporary SQLite database dedicated to that E2E instance, a
 - new game setup happy path plus validation fallback when setup options become invalid
 - granular rendering coverage to catch unnecessary panel remounts during gameplay updates
 - visual baselines for main screen, secondary pages, mobile shells, and World Classic board layouts
+- mobile-device UAT at 360×780, 390×844, 430×932, and landscape with real `isMobile`, `hasTouch`, Android/Chromium, and iPhone/WebKit profiles
 
 ## Notes for contributors
 
 - The default runner starts its own backend instance and should be preferred over pointing Playwright at a manually started local server.
 - If you intentionally change visual output, update baselines with `npm run test:e2e:update` in the same branch/PR that introduces the UI change.
+- Mobile UAT fails before starting when either Chromium or WebKit is unavailable. CI uses the pinned Playwright 1.61.1 Noble container and retains traces, screenshots, video, and HTML reports on failure.
+- Screenshot baselines keep Playwright's browser-project and operating-system suffixes, so adding mobile projects cannot make one browser overwrite another browser's expected image.
 - For large implementation steps, the expected local validation gate is `npm run test:all:e2e`.
