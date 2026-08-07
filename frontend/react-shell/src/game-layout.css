@@ -1890,10 +1890,18 @@ select {
 }
 
 .session-list-load-more {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
   padding: 14px 12px 4px;
   color: var(--muted);
   font-size: 0.84rem;
   text-align: center;
+}
+
+.session-list-load-more-button {
+  min-height: 44px;
+  padding: 8px 18px;
 }
 
 .session-list-load-more.is-hidden {

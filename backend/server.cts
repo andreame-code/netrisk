@@ -37,6 +37,7 @@ const {
 const { listSupportedThemeIds, resolveStoredThemeId } = require("../shared/extensions.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
+const { filterAutomatedGameFixtures } = require("./services/automated-game-fixture-retention.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const {
@@ -127,6 +128,7 @@ type CreateAppOptions = {
   gamesFile?: string;
   sessionsFile?: string;
   projectRoot?: string;
+  hideAutomatedGameFixtures?: boolean;
 };
 type GameContext = {
   gameId: string | null;
@@ -420,6 +422,15 @@ function createApp(options: CreateAppOptions = {}) {
     dataFile: gamesFile,
     resolveMapName: resolveCatalogMapName
   });
+  const hideAutomatedGameFixtures =
+    options.hideAutomatedGameFixtures ??
+    String(process.env.VERCEL_ENV || "")
+      .trim()
+      .toLowerCase() === "production";
+  async function listPublicGames() {
+    const games = await gameSessions.listGames();
+    return hideAutomatedGameFixtures ? filterAutomatedGameFixtures(games) : games;
+  }
   const playerProfiles = createPlayerProfileStore({
     datastore,
     gamesFile,
@@ -966,7 +977,7 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "GET" && url.pathname === "/api/games") {
       await handleGamesListRoute(
         res,
-        () => gameSessions.listGames(),
+        listPublicGames,
         getTargetGameId,
         sendJson,
         url,
@@ -1377,6 +1388,22 @@ function createApp(options: CreateAppOptions = {}) {
               }
               return gameSessions.datastore.deleteGame(gameId);
             },
+            deleteGameIfUnchanged: (
+              gameId: string,
+              expectedVersion: number,
+              expectedUpdatedAt: string
+            ) => {
+              if (typeof gameSessions.datastore.deleteGameIfUnchanged !== "function") {
+                throw new Error(
+                  "Il datastore non supporta la cancellazione atomica delle partite."
+                );
+              }
+              return gameSessions.datastore.deleteGameIfUnchanged(
+                gameId,
+                expectedVersion,
+                expectedUpdatedAt
+              );
+            },
             afterDelete: ({ gameId }: { gameId: string; gameName: string | null }) => {
               if (gameId === activeGameId) {
                 activeGameId = null;
@@ -1461,7 +1488,7 @@ function createApp(options: CreateAppOptions = {}) {
           activeGameCreatorUserId = created.game.creatorUserId || null;
           return created;
         },
-        () => gameSessions.listGames(),
+        listPublicGames,
         replaceState,
         broadcastGame,
         snapshot,
@@ -1482,7 +1509,7 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (gameId: string) => gameSessions.getGame(gameId),
         (gameId: string) => gameSessions.openGame(gameId),
-        () => gameSessions.listGames(),
+        listPublicGames,
         resumeAiTurnsForRead,
         resolvePlayerForUser,
         snapshotForUser,

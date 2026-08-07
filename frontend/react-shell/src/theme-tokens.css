@@ -4551,7 +4551,18 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .session-list-panel 
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .session-list-load-more {
-  display: none;
+  padding: 16px 18px;
+  border-top: 1px solid rgba(117, 145, 156, 0.28);
+  background: rgba(1, 8, 13, 0.4);
+  color: rgba(220, 229, 233, 0.72);
+}
+
+html[data-theme="war-table"] body[data-app-section="lobby"] .session-list-load-more-button {
+  min-width: 180px;
+  min-height: 44px;
+  border-color: rgba(242, 169, 31, 0.72);
+  background: rgba(8, 24, 34, 0.88);
+  color: var(--gold-hi);
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .session-list {
@@ -5099,9 +5110,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     padding-inline: 10px;
   }
 
-  body[data-shell-kind="app"][data-app-section="game"]
-    .top-nav-bar.is-anonymous
-    .top-nav-actions {
+  body[data-shell-kind="app"][data-app-section="game"] .top-nav-bar.is-anonymous .top-nav-actions {
     position: relative !important;
     height: 44px;
     min-height: 44px;
@@ -5157,9 +5166,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     display: none !important;
   }
 
-  body[data-shell-kind="app"][data-app-section="game"]
-    .top-nav-bar.is-anonymous
-    .war-nav-user {
+  body[data-shell-kind="app"][data-app-section="game"] .top-nav-bar.is-anonymous .war-nav-user {
     display: none !important;
   }
 

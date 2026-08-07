@@ -282,6 +282,29 @@ function matchesWarTableSearch(game: GameSummary, query: string): boolean {
     .some((value) => String(value).toLowerCase().includes(normalizedQuery));
 }
 
+function lobbyGamePriority(game: GameSummary): number {
+  if (game.phase === "active") {
+    return 0;
+  }
+
+  if (game.phase === "lobby") {
+    return 1;
+  }
+
+  return 2;
+}
+
+function prioritizeLobbyGames(games: GameSummary[]): GameSummary[] {
+  return games.slice().sort((left, right) => {
+    const priorityDifference = lobbyGamePriority(left) - lobbyGamePriority(right);
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return String(right.updatedAt || "").localeCompare(String(left.updatedAt || ""));
+  });
+}
+
 function setLobbyGamesCache(
   queryClient: ReturnType<typeof useQueryClient>,
   payload: GameListResponse
@@ -340,20 +363,23 @@ export function LobbyRoute() {
   const activeGameId = lobbyQuery.data?.activeGameId || null;
   const shellTheme = currentShellTheme();
   const isWarTableTheme = shellTheme === "war-table";
-  const displayGames = useMemo(
-    () =>
-      isWarTableTheme
-        ? games.filter(
-            (game) =>
-              matchesWarTableFilter(game, warTableFilter) &&
-              matchesWarTableSearch(game, warTableSearch)
-          )
-        : games,
-    [games, isWarTableTheme, playerSessionVersion, warTableFilter, warTableSearch]
-  );
+  const displayGames = useMemo(() => {
+    const prioritizedGames = prioritizeLobbyGames(games);
+    return isWarTableTheme
+      ? prioritizedGames.filter(
+          (game) =>
+            matchesWarTableFilter(game, warTableFilter) &&
+            matchesWarTableSearch(game, warTableSearch)
+        )
+      : prioritizedGames;
+  }, [games, isWarTableTheme, playerSessionVersion, warTableFilter, warTableSearch]);
 
   useEffect(() => {
-    const selectableGames = isWarTableTheme ? displayGames : games;
+    setVisibleGameCount(VISIBLE_GAMES_BATCH_SIZE);
+  }, [warTableFilter, warTableSearch]);
+
+  useEffect(() => {
+    const selectableGames = displayGames;
 
     if (!selectableGames.length) {
       setSelectedGameId(null);
@@ -377,12 +403,11 @@ export function LobbyRoute() {
     setVisibleGameCount((current) =>
       Math.min(selectableGames.length, Math.max(VISIBLE_GAMES_BATCH_SIZE, current))
     );
-  }, [activeGameId, displayGames, games, isWarTableTheme]);
+  }, [activeGameId, displayGames]);
 
-  const canLoadMoreGames = !isWarTableTheme && visibleGameCount < displayGames.length;
+  const canLoadMoreGames = visibleGameCount < displayGames.length;
   const visibleGames = displayGames.slice(0, visibleGameCount);
-  const selectedGame =
-    (isWarTableTheme ? displayGames : games).find((game) => game.id === selectedGameId) || null;
+  const selectedGame = displayGames.find((game) => game.id === selectedGameId) || null;
   const readyGames = games.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
   const activeGame = games.find((game) => game.id === activeGameId) || null;
   const actionPending = openMutation.isPending || joinMutation.isPending;
@@ -472,7 +497,7 @@ export function LobbyRoute() {
     await handleJoinGame(selectedGame);
   }
 
-  const renderedGames = isWarTableTheme ? displayGames : visibleGames;
+  const renderedGames = visibleGames;
   const hasGames = renderedGames.length > 0;
   const listStateMessage = lobbyQuery.isLoading
     ? t("lobby.loading")
@@ -857,8 +882,25 @@ export function LobbyRoute() {
               ref={loadMoreRef}
               className={`session-list-load-more${hasGames ? "" : " is-hidden"}`}
               data-testid="react-shell-lobby-load-more"
+              role="status"
+              aria-live="polite"
             >
-              {loadMoreMessage}
+              <span>{loadMoreMessage}</span>
+              {canLoadMoreGames ? (
+                <button
+                  type="button"
+                  className="session-list-load-more-button"
+                  data-testid="react-shell-lobby-load-more-button"
+                  aria-controls="game-session-list"
+                  onClick={() =>
+                    setVisibleGameCount((current) =>
+                      Math.min(displayGames.length, current + VISIBLE_GAMES_BATCH_SIZE)
+                    )
+                  }
+                >
+                  {t("lobby.loadMore.action")}
+                </button>
+              ) : null}
             </div>
           </div>
 

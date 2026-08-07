@@ -102,14 +102,18 @@ test("react lobby sends a guest to login before viewing an active game", async (
   await expect(page.getByText("Sessione non valida.")).toHaveCount(0);
 });
 
-test("react lobby shows the first page and can reveal the full session list", async ({ page }) => {
+test("mobile War Table lobby paginates 70+ games without limiting focus, search, or filters", async ({
+  page
+}) => {
+  test.slow();
   await resetGame(page);
+  await page.setViewportSize({ width: 390, height: 844 });
 
   const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_lobby_owner"));
-
-  for (let index = 0; index < 18; index += 1) {
+  const requestHeaders = { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` };
+  for (let index = 0; index < 69; index += 1) {
     const createResponse = await page.request.post("/api/games", {
-      headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` },
+      headers: requestHeaders,
       data: {
         name: uniqueUser(`react_lobby_${String(index + 1).padStart(2, "0")}`),
         totalPlayers: 2,
@@ -122,29 +126,89 @@ test("react lobby shows the first page and can reveal the full session list", as
     await expect(createResponse.ok()).toBeTruthy();
   }
 
+  const focusedGameName = uniqueUser("react_lobby_focus_beyond_page");
+  const focusedResponse = await page.request.post("/api/games", {
+    headers: requestHeaders,
+    data: {
+      name: focusedGameName,
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(focusedResponse.ok()).toBeTruthy();
+  const focusedGame = await focusedResponse.json();
+
+  // The isolated E2E database lets this test archive the current focus without a test-only API.
+  const dbFile = process.env.E2E_DB_FILE;
+  expect(dbFile).toBeTruthy();
+  const { DatabaseSync } = require("node:sqlite");
+  const database = new DatabaseSync(dbFile);
+  try {
+    const storedRow = database
+      .prepare("SELECT state_json FROM games WHERE id = ?")
+      .get(focusedGame.game.id);
+    expect(storedRow).toBeTruthy();
+    const storedState = JSON.parse(storedRow.state_json);
+    storedState.phase = "finished";
+    const updateResult = database
+      .prepare("UPDATE games SET state_json = ? WHERE id = ?")
+      .run(JSON.stringify(storedState), focusedGame.game.id);
+    expect(updateResult.changes).toBe(1);
+  } finally {
+    database.close();
+  }
+
+  const themeResponse = await page.request.put("/api/profile/preferences/theme", {
+    headers: requestHeaders,
+    data: { theme: "war-table" }
+  });
+  await expect(themeResponse.ok()).toBeTruthy();
   await attachSessionCookie(page, sessionToken);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("netrisk.theme", "war-table");
+  });
   await page.goto("/react/lobby");
 
   const rows = page.locator("[data-testid^='react-shell-lobby-row-']");
-  await expect
-    .poll(async () => rows.count(), {
-      message: "the lobby should render at least the first batch of sessions",
-      timeout: 15000
-    })
-    .toBeGreaterThanOrEqual(15);
-
-  const initialCount = await rows.count();
-  expect(initialCount).toBeLessThanOrEqual(19);
+  await expect(rows).toHaveCount(15, { timeout: 15000 });
+  await expect(page.locator("#lobby-active-focus")).toHaveText(focusedGameName);
+  await expect(page.getByTestId(`react-shell-lobby-row-${focusedGame.game.id}`)).toHaveCount(0);
 
   const loadMoreState = page.getByTestId("react-shell-lobby-load-more");
-  await expect(loadMoreState).toContainText(new RegExp(String(initialCount)));
+  await expect(loadMoreState).toContainText(/15/);
+  const loadMoreButton = page.getByTestId("react-shell-lobby-load-more-button");
+  await expect(loadMoreButton).toBeVisible();
+  await expect(loadMoreButton).toHaveAttribute("aria-controls", "game-session-list");
+  const loadMoreBox = await loadMoreButton.boundingBox();
+  expect(loadMoreBox?.height).toBeGreaterThanOrEqual(44);
+  await loadMoreButton.evaluate((button) => button.click());
+  await expect(rows).toHaveCount(30);
 
-  if (initialCount < 19) {
-    await loadMoreState.scrollIntoViewIfNeeded();
-    await expect.poll(async () => rows.count(), { timeout: 15000 }).toBe(19);
+  const search = page.getByPlaceholder(/Search games|Cerca partite/i);
+  await search.fill(focusedGameName);
+  await expect(rows).toHaveCount(1);
+  await expect(page.getByTestId(`react-shell-lobby-row-${focusedGame.game.id}`)).toBeVisible();
+
+  await search.fill("");
+  const statusTabs = page.getByRole("tab");
+  await statusTabs.last().click();
+  await expect(rows).toHaveCount(1);
+  await expect(page.getByTestId(`react-shell-lobby-row-${focusedGame.game.id}`)).toBeVisible();
+
+  await statusTabs.first().click();
+  await expect(rows).toHaveCount(15);
+  for (const expectedCount of [30, 45, 60, 71]) {
+    await page
+      .getByTestId("react-shell-lobby-load-more-button")
+      .evaluate((button) => button.click());
+    await expect(rows).toHaveCount(expectedCount);
   }
 
-  await expect(loadMoreState).toContainText(/19/);
+  await expect(page.getByTestId("react-shell-lobby-load-more-button")).toHaveCount(0);
+  await expect(loadMoreState).toContainText(/71/);
 });
 
 test("react lobby can open a selected game and navigate to the React gameplay route", async ({
