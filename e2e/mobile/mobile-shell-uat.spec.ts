@@ -26,7 +26,9 @@ test("mobile profile exposes touch input and renders the public and protected sh
   }));
   expect(runtimeProfile.width).toBe(expectedProfile.width);
   expect(runtimeProfile.height).toBe(expectedProfile.height);
-  expect(runtimeProfile.maxTouchPoints).toBeGreaterThan(0);
+  if (expectedProfile.browser === "chromium") {
+    expect(runtimeProfile.maxTouchPoints).toBeGreaterThan(0);
+  }
   expect(runtimeProfile.coarsePointer).toBe(true);
   expect(runtimeProfile.userAgent).toMatch(
     expectedProfile.browser === "webkit" ? /iPhone|Mobile/i : /Android|Mobile/i
@@ -34,6 +36,17 @@ test("mobile profile exposes touch input and renders the public and protected sh
 
   await page.goto("/");
   await expect(page.locator(".ld-header")).toBeVisible();
+  await page.evaluate(() => {
+    window.addEventListener(
+      "touchstart",
+      () => {
+        document.body.dataset.mobileTouchReceived = "true";
+      },
+      { once: true }
+    );
+  });
+  await page.locator(".ld-header").tap({ position: { x: 2, y: 2 } });
+  await expect(page.locator("body")).toHaveAttribute("data-mobile-touch-received", "true");
   await expectTouchTarget(page.getByRole("link", { name: /Accedi|Log in/i }).first());
 
   await page.goto("/profile?tab=stats");

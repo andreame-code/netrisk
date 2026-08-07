@@ -27,7 +27,29 @@ export async function inspectMobileEnvironment(): Promise<{
       const context = await browser.newContext(deviceOptions);
       try {
         const page = await context.newPage();
-        await page.goto("data:text/html,<meta name='viewport' content='width=device-width'>");
+        await page.goto(
+          "data:text/html,<meta name='viewport' content='width=device-width'><button id='touch-probe'>Touch probe</button>"
+        );
+        await page.evaluate(() => {
+          const runtime = globalThis as unknown as {
+            document: {
+              addEventListener: (
+                type: string,
+                listener: () => void,
+                options: { once: boolean }
+              ) => void;
+            };
+            touchEventReceived?: boolean;
+          };
+          runtime.document.addEventListener(
+            "touchstart",
+            () => {
+              runtime.touchEventReceived = true;
+            },
+            { once: true }
+          );
+        });
+        await page.locator("#touch-probe").tap();
         const input = await page.evaluate(() => ({
           maxTouchPoints: (globalThis as unknown as { navigator: { maxTouchPoints: number } })
             .navigator.maxTouchPoints,
@@ -36,7 +58,9 @@ export async function inspectMobileEnvironment(): Promise<{
           ).matchMedia("(pointer: coarse)").matches,
           mobileUserAgent: /Android|iPhone|Mobile/i.test(
             (globalThis as unknown as { navigator: { userAgent: string } }).navigator.userAgent
-          )
+          ),
+          touchEventReceived:
+            (globalThis as unknown as { touchEventReceived?: boolean }).touchEventReceived === true
         }));
         inspections.push({
           browserName: profile.browserName,
@@ -73,7 +97,7 @@ export async function runMobileEnvironmentPreflight(): Promise<void> {
   console.log(`Mobile UAT environment: Playwright ${environment.playwrightVersion}`);
   for (const inspection of environment.inspections) {
     console.log(
-      `- ${inspection.browserName} ${inspection.browserVersion}: touch=${inspection.maxTouchPoints}, coarse=${inspection.coarsePointer}`
+      `- ${inspection.browserName} ${inspection.browserVersion}: touchEvent=${inspection.touchEventReceived}, maxTouchPoints=${inspection.maxTouchPoints}, coarse=${inspection.coarsePointer}`
     );
   }
 

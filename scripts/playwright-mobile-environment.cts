@@ -153,6 +153,7 @@ export type MobileBrowserInspection = {
   browserVersion: string;
   executablePath: string;
   maxTouchPoints: number;
+  touchEventReceived: boolean;
   coarsePointer: boolean;
   mobileUserAgent: boolean;
 };
@@ -174,8 +175,8 @@ export function validateMobileEnvironment(
       errors.push(`Required mobile browser is unavailable: ${browserName}.`);
       continue;
     }
-    if (inspection.maxTouchPoints < 1) {
-      errors.push(`${browserName} did not expose touch input.`);
+    if (!inspection.touchEventReceived) {
+      errors.push(`${browserName} did not dispatch touch input.`);
     }
     if (!inspection.coarsePointer) {
       errors.push(`${browserName} did not expose a coarse primary pointer.`);

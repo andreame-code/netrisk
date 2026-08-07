@@ -13,6 +13,7 @@ function supportedInspections() {
     browserVersion: "test",
     executablePath: `/ms-playwright/${browserName}`,
     maxTouchPoints: 1,
+    touchEventReceived: true,
     coarsePointer: true,
     mobileUserAgent: true
   }));
@@ -30,12 +31,13 @@ register("mobile environment rejects missing browsers and desktop input", () => 
     {
       ...supportedInspections()[0],
       maxTouchPoints: 0,
+      touchEventReceived: false,
       coarsePointer: false,
       mobileUserAgent: false
     }
   ]);
 
-  assert.ok(errors.some((error: string) => error.includes("did not expose touch input")));
+  assert.ok(errors.some((error: string) => error.includes("did not dispatch touch input")));
   assert.ok(errors.some((error: string) => error.includes("coarse primary pointer")));
   assert.ok(errors.some((error: string) => error.includes("mobile user agent")));
   assert.ok(errors.some((error: string) => error.includes("webkit")));
